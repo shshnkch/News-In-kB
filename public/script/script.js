@@ -117,27 +117,38 @@ async function fetchJSON(url, retries = 2) {
   }
 }
 
-async function fetchPage(p = 1, limit = PAGE_LIMIT) {
-  const r = await fetchJSON(`/news?page=${p}&limit=${limit}`);
+async function fetchPage(p = 1, limit = PAGE_LIMIT, snapshot) {
+  const url = new URL('/news', location.origin);
+  url.searchParams.set('page', String(p));
+  url.searchParams.set('limit', String(limit));
+  if (snapshot) url.searchParams.set('snapshot', snapshot);
+
+  const r = await fetchJSON(url.toString());
   return {
     items: Array.isArray(r?.articles) ? r.articles : [],
     totalPages: r?.totalPages || 0,
     page: r?.page || p,
+    snapshot: r?.snapshot || null,
   };
 }
+
 
 async function fetchAllArticles() {
   const first = await fetchPage(1, PAGE_LIMIT);
   const total = Math.min(first.totalPages || 1, MAX_PAGES_CAP);
   let all = [...first.items];
+
   if (total > 1) {
     const tasks = [];
-    for (let p = 2; p <= total; p++) tasks.push(fetchPage(p, PAGE_LIMIT));
+    for (let p = 2; p <= total; p++) {
+      tasks.push(fetchPage(p, PAGE_LIMIT, first.snapshot)); // reuse same snapshot
+    }
     const rest = await Promise.all(tasks);
     for (const r of rest) all.push(...r.items);
   }
   return all;
 }
+
 
 async function serverTopId() {
   const r = await fetchPage(1, 1);

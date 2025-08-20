@@ -1,11 +1,11 @@
 /* ============================================================
-   /src/routes/newsRoute.js
+   /src/routes/newsRoute.js  (snapshot-safe pagination)
    ------------------------------------------------------------
    Responsibilities:
-   - Serve paginated news to the frontend
-   - Keep paging predictable & fast
-   - Avoid hidden filters: return every stored article
-   - Stay in sync with FE defaults (50 per page)
+   - Serve paginated news in a stable order
+   - Issue a "snapshot" (ISO datetime) on page 1
+   - Constrain pages 2..N to createdAt <= snapshot to avoid drift
+   - Keep FE default page size in sync (50)
    ============================================================ */
 
 const express = require('express');
@@ -14,28 +14,20 @@ const Article = require('../models/article');
 const router = express.Router();
 
 /* ---------- Paging caps ---------- */
-// FE asks for 50 per page; keep server default aligned.
-// Cap at 100 to protect the DB from huge page sizes.
-const MAX_LIMIT = 100;
-const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 100;     // hard cap
+const DEFAULT_LIMIT = 50;  // FE expects 50
 
 /* ---------- Helpers ---------- */
-/**
- * Parse a numeric query param safely.
- * - Accepts string OR array (Express can hand arrays if ?limit appears twice)
- * - Falls back to a given default if missing/invalid
- */
+// parse numeric query param safely (supports arrays)
 function parseIntParam(val, fallback) {
   if (Array.isArray(val)) val = val[0];
   const n = parseInt(val, 10);
   return Number.isFinite(n) ? n : fallback;
 }
 
-/* ---------- Route: GET /news ---------- */
 router.get('/news', async (req, res) => {
   try {
-    // ---- parse & sanitize query ----
-    // Use 50 as default so even if FE forgets ?limit, we still send 50.
+    // -------- parse & sanitize --------
     const limit = Math.min(
       Math.max(parseIntParam(req.query.limit, DEFAULT_LIMIT), 1),
       MAX_LIMIT
@@ -43,33 +35,40 @@ router.get('/news', async (req, res) => {
     const page = Math.max(parseIntParam(req.query.page, 1), 1);
     const skip = (page - 1) * limit;
 
-    // Stable, newest-first ordering.
-    // Use a compound sort so pagination doesn't shuffle between requests:
-    //   pubDate desc → createdAt desc → _id desc
-    // If client asks for sortBy=pubDate, prioritize pubDate; otherwise prefer createdAt.
+    // stable newest-first ordering (prevents shuffling)
     const sortBy =
       req.query.sortBy === 'pubDate'
         ? { pubDate: -1, createdAt: -1, _id: -1 }
         : { createdAt: -1, pubDate: -1, _id: -1 };
 
-    // ---- query ----
-    // No hidden filters — expose all articles we have.
+    // -------- snapshot handling --------
+    // page 1: create fresh snapshot = "now"
+    // page 2..N: reuse client's snapshot to freeze the dataset
+    const snapParam = Array.isArray(req.query.snapshot) ? req.query.snapshot[0] : req.query.snapshot;
+    let snapshot = snapParam ? new Date(snapParam) : null;
+    if (!snapshot || Number.isNaN(snapshot.getTime())) {
+      snapshot = new Date(); // anchor at first request
+    }
+
+    const baseQuery = { createdAt: { $lte: snapshot } };
+
+    // -------- query --------
     const [total, articles] = await Promise.all([
-      Article.countDocuments({}), // exact total across the whole collection
-      Article.find({})
+      Article.countDocuments(baseQuery),
+      Article.find(baseQuery)
         .sort(sortBy)
         .skip(skip)
         .limit(limit)
-        .select('title summary link source pubDate image createdAt') // keep payload lean
+        .select('title summary link source pubDate image createdAt')
         .lean()
     ]);
 
-    // ---- payload ----
     res.status(200).json({
       page,
       limit,
       totalPages: Math.max(1, Math.ceil(total / limit)),
       totalArticles: total,
+      snapshot: snapshot.toISOString(), // client reuses this for pages 2..N
       count: articles.length,
       articles
     });
