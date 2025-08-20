@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NewsInkB</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#03045e" />
+  <meta name="description" content="Quick, clean, 100-word news summaries." />
+
+  <!-- preload styles for faster render -->
+  <link rel="preload" href="/css/grey.css" as="style" />
+  <!-- actual stylesheet (theme-switcher.js will swap this if needed) -->
+  <link id="themeStylesheet" rel="stylesheet" href="/css/glass.css" />
+
+  <!-- fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
+  <!-- scripts -->
+  <script src="/script/script.js" defer></script>
+  <script src="/script/theme-switcher.js" defer></script>
+
+  <!-- fallback for no-JS -->
+  <noscript>
+    <style>
+      .nojs { 
+        padding: 1rem; 
+        background: #fff3cd; 
+        color: #664d03; 
+        border-radius: 10px; 
+      }
+    </style>
+  </noscript>
+</head>
+<body>
+  <div class="panel" role="main">
+    <!-- top header / branding -->
+    <header class="panel-header">
+      <h1 id="logo" aria-label="News Ink B">
+        <img src="/logo.png" alt="Logo" class="site-logo">
+        News-In-kB
+      </h1>
+    </header>
+
+    <!-- main content area -->
+    <section class="content" aria-live="polite" aria-busy="false">
+      <!-- desktop/tablet arrows -->
+      <button id="prevBtn" class="side-btn left" aria-label="Previous article" disabled>⬅</button>
+
+      <!-- JS injects news cards here -->
+      <div id="news-container" role="region" aria-label="News card"></div>
+
+      <button id="nextBtn" class="side-btn right" aria-label="Next article">➡</button>
+    </section>
+
+    <!-- bottom nav (for small screens) -->
+    <nav class="btn-row" id="btm-btn" aria-label="Article navigation">
+      <button id="prevBtnAlt" class="nav-alt" aria-label="Previous article">⬅</button>
+
+      <div class="btn-group">
+        <button id="latestBtn" class="latest-btn" aria-label="Show unread news">Latest News</button>
+        <button id="scopeToggleBtn" class="latest-btn" aria-label="Toggle between unread and all news">All News</button>
+      </div>
+
+      <button id="nextBtnAlt" class="nav-alt" aria-label="Next article">➡</button>
+    </nav>
+
+    <!-- warning for no-JS users -->
+    <noscript>
+      <div class="nojs">JavaScript is required to load the latest summaries.</div>
+    </noscript>
+  </div>
+</body>
+</html>
