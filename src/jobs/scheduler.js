@@ -24,18 +24,18 @@ const CRON_EXPR = process.env.NEWS_CRON || '*/30 * * * *';
 const INITIAL_THRESHOLD = Number(process.env.INITIAL_THRESHOLD || 10);
 
 // Optional: cap concurrent Mongoose connections from multiple restarts
-const MONGO_URI = process.env.MONGO_URI;
+const MONGODB_URI = process.env.MONGO_URI;
 const MONGO_DB  = process.env.MONGO_DB || undefined;
 
 /* ---------- Startup ---------- */
 (async function boot() {
   try {
-    if (!MONGO_URI) {
+    if (!MONGODB_URI) {
       console.error('[scheduler] Missing MONGO_URI env var. Exiting.');
       process.exit(1);
     }
 
-    await mongoose.connect(MONGO_URI, { dbName: MONGO_DB });
+    await mongoose.connect(MONGODB_URI, { dbName: MONGO_DB });
     console.log('[scheduler] Mongo connected');
 
     // Decide if we should run "initial" or not
