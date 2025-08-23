@@ -1,6 +1,6 @@
 # 📰 News-In-kB
 
-**News-In-kB** is a real-time AI-powered news aggregator that fetches articles from multiple sources, scrapes full content, and generates concise summaries (~100 words, like *Inshorts*).  
+**News-In-kB** is a real-time AI-powered news aggregator that fetches articles from multiple sources, scrapes full content, and generates concise summaries.  
 Built with **Node.js, Express, MongoDB, EJS**, and powered by **Axios, Cheerio, and OpenAI/Groq**, it delivers fresh, clean, and minimalistic news updates.
 
 🔗 **Live Demo:** [News-In-kB](https://news-in-kb.up.railway.app/)  
